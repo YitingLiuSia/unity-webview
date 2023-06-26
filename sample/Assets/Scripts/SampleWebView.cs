@@ -30,6 +30,19 @@ public class SampleWebView : MonoBehaviour
     public string Url;
     public Text status;
     WebViewObject webViewObject;
+    public RectTransform imageRect;
+
+    // cf. https://answers.unity.com/questions/1013011/convert-recttransform-rect-to-screen-space.html?childToView=1628573#answer-1628573
+    public static Bounds GetRectTransformBounds(RectTransform transform)
+    {
+        var corners = new Vector3[4]; transform.GetWorldCorners(corners);
+        var bounds = new Bounds(corners[0], Vector3.zero);
+        for (var i = 1; i < 4; i++)
+        {
+            bounds.Encapsulate(corners[i]);
+        }
+        return bounds;
+    }
 
     IEnumerator Start()
     {
@@ -144,27 +157,42 @@ public class SampleWebView : MonoBehaviour
         // Add BASIC authentication feature (Android and iOS with WKWebView only) by takeh1k0 · Pull Request #570 · gree/unity-webview
         //webViewObject.SetBasicAuthInfo("id", "password");
 
-        //webViewObject.SetScrollbarsVisibility(true);
+        webViewObject.SetScrollbarsVisibility(true);
 
-        webViewObject.SetMargins(5, 100, 5, Screen.height / 4);
+        // webViewObject.SetMargins(5, 100, 5, Screen.height / 4);
+        var bounds = GetRectTransformBounds(imageRect);
+        Debug.Log(Screen.width);
+        Debug.Log(Screen.height);
+        Debug.Log(bounds);
+        webViewObject.SetMargins(
+        (int)bounds.min.x,
+        (int)(Screen.height - bounds.max.y),
+        (int)(Screen.width - bounds.max.x),
+        (int)bounds.min.y);
+
         webViewObject.SetTextZoom(100);  // android only. cf. https://stackoverflow.com/questions/21647641/android-webview-set-font-size-system-default/47017410#47017410
         webViewObject.SetVisibility(true);
 
 #if !UNITY_WEBPLAYER && !UNITY_WEBGL
-        if (Url.StartsWith("http")) {
+        if (Url.StartsWith("http"))
+        {
             webViewObject.LoadURL(Url.Replace(" ", "%20"));
-        } else {
+        }
+        else
+        {
             var exts = new string[]{
                 ".jpg",
                 ".js",
                 ".html"  // should be last
             };
-            foreach (var ext in exts) {
+            foreach (var ext in exts)
+            {
                 var url = Url.Replace(".html", ext);
                 var src = System.IO.Path.Combine(Application.streamingAssetsPath, url);
                 var dst = System.IO.Path.Combine(Application.temporaryCachePath, url);
                 byte[] result = null;
-                if (src.Contains("://")) {  // for Android
+                if (src.Contains("://"))
+                {  // for Android
 #if UNITY_2018_4_OR_NEWER
                     // NOTE: a more complete code that utilizes UnityWebRequest can be found in https://github.com/gree/unity-webview/commit/2a07e82f760a8495aa3a77a23453f384869caba7#diff-4379160fa4c2a287f414c07eb10ee36d
                     var unityWebRequest = UnityWebRequest.Get(src);
@@ -175,11 +203,14 @@ public class SampleWebView : MonoBehaviour
                     yield return www;
                     result = www.bytes;
 #endif
-                } else {
+                }
+                else
+                {
                     result = System.IO.File.ReadAllBytes(src);
                 }
                 System.IO.File.WriteAllBytes(dst, result);
-                if (ext == ".html") {
+                if (ext == ".html")
+                {
                     webViewObject.LoadURL("file://" + dst.Replace(" ", "%20"));
                     break;
                 }
@@ -200,20 +231,23 @@ public class SampleWebView : MonoBehaviour
         var x = 10;
 
         GUI.enabled = (webViewObject == null) ? false : webViewObject.CanGoBack();
-        if (GUI.Button(new Rect(x, 10, 80, 80), "<")) {
+        if (GUI.Button(new Rect(x, 10, 80, 80), "<"))
+        {
             webViewObject?.GoBack();
         }
         GUI.enabled = true;
         x += 90;
 
         GUI.enabled = (webViewObject == null) ? false : webViewObject.CanGoForward();
-        if (GUI.Button(new Rect(x, 10, 80, 80), ">")) {
+        if (GUI.Button(new Rect(x, 10, 80, 80), ">"))
+        {
             webViewObject?.GoForward();
         }
         GUI.enabled = true;
         x += 90;
 
-        if (GUI.Button(new Rect(x, 10, 80, 80), "r")) {
+        if (GUI.Button(new Rect(x, 10, 80, 80), "r"))
+        {
             webViewObject?.Reload();
         }
         x += 90;
@@ -221,32 +255,40 @@ public class SampleWebView : MonoBehaviour
         GUI.TextField(new Rect(x, 10, 180, 80), "" + ((webViewObject == null) ? 0 : webViewObject.Progress()));
         x += 190;
 
-        if (GUI.Button(new Rect(x, 10, 80, 80), "*")) {
+        if (GUI.Button(new Rect(x, 10, 80, 80), "*"))
+        {
             var g = GameObject.Find("WebViewObject");
-            if (g != null) {
+            if (g != null)
+            {
                 Destroy(g);
-            } else {
+            }
+            else
+            {
                 StartCoroutine(Start());
             }
         }
         x += 90;
 
-        if (GUI.Button(new Rect(x, 10, 80, 80), "c")) {
+        if (GUI.Button(new Rect(x, 10, 80, 80), "c"))
+        {
             webViewObject?.GetCookies(Url);
         }
         x += 90;
 
-        if (GUI.Button(new Rect(x, 10, 80, 80), "x")) {
+        if (GUI.Button(new Rect(x, 10, 80, 80), "x"))
+        {
             webViewObject?.ClearCookies();
         }
         x += 90;
 
-        if (GUI.Button(new Rect(x, 10, 80, 80), "D")) {
+        if (GUI.Button(new Rect(x, 10, 80, 80), "D"))
+        {
             webViewObject?.SetInteractionEnabled(false);
         }
         x += 90;
 
-        if (GUI.Button(new Rect(x, 10, 80, 80), "E")) {
+        if (GUI.Button(new Rect(x, 10, 80, 80), "E"))
+        {
             webViewObject?.SetInteractionEnabled(true);
         }
         x += 90;
